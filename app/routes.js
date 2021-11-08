@@ -32,49 +32,16 @@ var upload = multer({storage: storage});
         })
     });
 
-  //   app.get('/post/:username', isLoggedIn, function (req, res) {
-  //     let username = req.params.username
-  //     db.collection('feed').find({
-  //         "userPosted": username
-  //     }).toArray((err, result) => {
-  //         db.collection('users').find({
-  //             "local.username": username
-  //         }).toArray((err, mainResult) => {
-  //             console.log(mainResult);
-  //             if (err) return console.log(err)
-  //             res.render('user.ejs', {
-  //                 feed: result,
-  //                 main: mainResult
-  //             })
-  //         })
-  //     })
-  // });
-
-    //comments
-    app.get('/post/:username', isLoggedIn, function (req, res) {
-      let username = req.params.username
-      db.collection('posts').find({
-          "postedBy": username
-      }).toArray((err, result) => {
-          db.collection('users').find({
-              "local.username": username
-          }).toArray((err, mainResult) => {
-              console.log(mainResult);
-              if (err) return console.log(err)
-              res.render('user.ejs', {
-                  feed: result,
-                  main: mainResult
-              })
-          })
-      })
-  });
-
     //feed page
     app.get('/feed', function(req, res) {
-      db.collection('posts').find().toArray((err, result) => {
-        if (err) return console.log(err)
-        res.render('feed.ejs', {
-          posts: result
+      db.collection('posts').find({postedBy: req.user.local.username}).toArray((err, result) => {
+        db.collection('comments').find().toArray((err, mainResult) => {
+          if (err) return console.log(err)
+          res.render('feed.ejs', {
+            user: req.user,
+            posts: result,
+            comments: mainResult
+          })
         })
       })
   });
@@ -84,20 +51,29 @@ var upload = multer({storage: storage});
     let postId = ObjectId(req.params.zebra)
     console.log(postId)
     db.collection('posts').find({_id: postId}).toArray((err, result) => {
-      if (err) return console.log(err)
-      res.render('post.ejs', {
-        posts: result
+      db.collection('comments').find().toArray((err, mainResult) => {
+        if (err) return console.log(err)
+        res.render('post.ejs', {
+          user: req.user,
+          posts: result,
+          comments: mainResult
+        })
       })
     })
 });
 
 //profile page
 app.get('/page/:id', isLoggedIn, function(req, res) {
-  let postId = ObjectId(req.params.id)
+  let postId = req.params.id
   db.collection('posts').find({postedBy: postId}).toArray((err, result) => {
-    if (err) return console.log(err)
-    res.render('page.ejs', {
-      posts: result
+    db.collection('comments').find().toArray((err, mainResult) => {
+      if (err) return console.log(err)
+      res.render('page.ejs', {
+        user: req.user,
+        account: req.params.id,
+        posts: result,
+        comments: mainResult
+      })
     })
   })
 });
@@ -110,10 +86,26 @@ app.get('/page/:id', isLoggedIn, function(req, res) {
 
 // post routes
 app.post('/makePost', upload.single('file-to-upload'), (req, res) => {
-  db.collection('posts').save({caption: req.body.caption, img: 'images/uploads/' + req.file.filename, postedBy: req.user.local.username}, (err, result) => {
+  db.collection('posts').save({caption: req.body.caption, img: 'images/uploads/' + req.file.filename, postedBy: req.user.local.username, heart: 0}, (err, result) => {
     if (err) return console.log(err)
     console.log('saved to database')
     res.redirect('/profile')
+  })
+})
+
+app.put('/makePost', (req, res) => {
+  let postId = ObjectId(req.body.postId)
+  db.collection('posts')
+  .findOneAndUpdate({_id: postId}, {
+    $set: {
+      heart: req.body.heart + 1
+    }
+  }, {
+    sort: {_id: -1},
+    upsert: true
+  }, (err, result) => {
+    if (err) return res.send(err)
+    res.send(result)
   })
 })
 

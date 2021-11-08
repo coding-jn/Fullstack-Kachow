@@ -1,8 +1,8 @@
 <!doctype html>
 <html>
 <head>
-    <title>Eternapound</title>
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+  <title>Kachow</title>
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -19,13 +19,23 @@
 
        
         <div class="col-sm-6">
-          <h3>Posts</h3>
+          <h3>Post</h3>
           <ul class="messages">
           <% for(var i=0; i<posts.length; i++) {%>
             <li class="message">
               <h4><%= posts[i].caption %></h4>
               <img src="../<%= posts[i].img %>" alt="">
             </li>
+            <ul>
+              <% for(var c=0; c<comments.length; c++) {%>
+                <% if(String(comments[c].forPost) === String(posts[i]._id)) {%>
+                  <li class="comments">
+                    <span><%= comments[c].postedBy %>:</span>
+                    <span><%= comments[c].comment %></span>
+                  </li>
+                <% } %>
+              <% } %>
+            </ul> 
           <% } %>
           </ul>
 
